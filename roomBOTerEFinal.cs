@@ -232,18 +232,8 @@ class bot
 		string bestGuess = setPickFrom.ElementAt(0);
 #if verbose
 		Console.Write(((attempt > 1) ? "Chars to combine: " + alphabet.Length + " " : "") + "Words to check: " + setPickFrom.Count + " Loops to run: " + (setPickFrom.Count * responsesAr.Length) + ".");
-		if (!selectedWords.Contains(bestGuess))
-		{
-			// say hooray the Extended guess surpassed Lexicon guess
-			Console.WriteLine(" Nonlexicon guess.");
-		}
-		else
-		{
-			if (!(attempt == 1))
-			{
-				Console.WriteLine();
-			}
-		}
+		// say hooray the Extended guess surpassed Lexicon guess
+		Console.WriteLine(selectedWords.Contains(bestGuess) ? "" : " Nonlexicon guess.");
 #endif
 		return bestGuess;
 	}
