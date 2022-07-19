@@ -335,7 +335,7 @@ class bot
 		return bestSet;
 	}
 	/// <summary>
-	/// Mr Shannon's entropy. Better than "expectation of words to be removed" (= when Log replaced by '(double)setCount - (double)Clone.Count') and of course not negative).
+	/// Mr Shannon's entropy. Better than "expectation of words to be removed" (= when Log replaced by '(double)set.Count - (double)cloneCount') and of course not negative).
 	/// </summary>
 	/// <param name="word"></param>
 	/// <param name="set"></param>
