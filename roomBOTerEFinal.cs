@@ -40,7 +40,7 @@ for (int a = 1; a <= 10000; a++)
 {
 #if debug
 	b.readWords();
-	string solution = b.makeSolution(a);
+	string solution = b.makeSolution();
 #else
 	b.startGame(token);
 #endif
@@ -52,7 +52,7 @@ for (int a = 1; a <= 10000; a++)
 		response = b.doGuessAndProcess(i);
 		b.lastResponse = response;
 	}
-	while ((response.Contains("N") || response.Contains("_")) && i < 10); // 10 is max attempts by definition
+	while ((response.Contains('N') || response.Contains('_')) && i < 10); // 10 is max attempts by definition
 	score += i;
 
 	// calculation of runnig average
@@ -97,14 +97,14 @@ class bot
 	Random rnd = new Random();
 	string guessed = "";
 	public string lastResponse = "";
-	string[]? responsesAr;
-	List<string>? setPickFrom; // set of words to evaluate for the best guess
+	string[] responsesAr = new string[0];
+	List<string> setPickFrom = new(); // set of words to evaluate for the best guess
 	int lenWord = 0;
 	// a set of possible solutions
 	List<string> selectedWords = new();
 #if debug
 	readonly evaluator e = new evaluator();
-	string[]? allwords; // set of all words to take maxWords randomly from (debug purposes)
+	string[] allwords = new string[0]; // set of all words to take maxWords randomly from (debug purposes)
 #endif
 	/// <summary>
 	/// set caps to force it to perform
@@ -156,8 +156,7 @@ class bot
 	/// <summary>
 	/// pick a solution for debug purposes
 	/// </summary>
-	/// <param name="a"></param>
-	public string makeSolution(int a)
+	public string makeSolution()
 	{
 		this.solution = selectedWords.ElementAt(rnd.Next(selectedWords.Count));
 		return this.solution;
@@ -170,19 +169,16 @@ class bot
 		string repsonse = "";
 		HttpRequestMessage hm = new HttpRequestMessage();
 		Uri uri = new Uri(@"http://wordle.panaxeo.com/start/" + token + "/" + lenWord + "/");
-
 		hm.RequestUri = uri;
 		hm.Method = HttpMethod.Get;
 		// boo for a sync call
 		HttpResponseMessage mess = hc.Send(hm);
 		Stream stream = mess.Content.ReadAsStream();
 		stream.Position = 0;
-
 		using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
 		{
 			repsonse = reader.ReadToEnd();
 		}
-
 		JObject joResponse = JObject.Parse(repsonse);
 		JArray arrayCS = (JArray)joResponse["candidate_solutions"];
 		selectedWords = new List<string>(arrayCS.Select(jv => (string)jv).ToArray());
@@ -202,8 +198,8 @@ class bot
 										  // and 99.999% it takes one among first 16 words of precomputed set, so the 256 is even an overkill)
 		{
 			string[] topOnes = File.ReadAllLines(@"./data/words" + lenWord + "top256.txt");
-			// do not even concatenate with lexicon words - 99.99% the word is from top 16 of this top 256
-			setPickFrom = new List<string>(topOnes).ToList();
+			// do not even concatenate with lexicon words - 99.999% the word is from top 16 of this top 256
+			setPickFrom = new List<string>(topOnes);
 		}
 		else
 		{
@@ -231,7 +227,7 @@ class bot
 		setPickFrom = getBestByEntropy(setPickFrom, selectedWords);
 		string bestGuess = setPickFrom.ElementAt(0);
 #if verbose
-		Console.Write(((attempt > 1) ? "Chars to combine: " + alphabet.Length + " " : "") + "Words to check: " + setPickFrom.Count + " Loops to run: " + (setPickFrom.Count * responsesAr.Length) + ".");
+		Console.Write(((attempt > 1) ? "Chars combined: " + alphabet.Length + ". " : "") + "Words checked: " + setPickFrom.Count + ". Loops ran: " + (setPickFrom.Count * responsesAr.Length) + ".");
 		// say hooray the Extended guess surpassed Lexicon guess
 		Console.WriteLine(selectedWords.Contains(bestGuess) ? "" : " Nonlexicon guess.");
 #endif
@@ -259,12 +255,6 @@ class bot
 		Console.WriteLine("COUNT    " + countWords);
 		Console.WriteLine("GUESS    " + guessed);
 		Console.WriteLine("RESP     " + response);
-#if printall
-		for (int i = 0; i < countWords; i++)
-		{
-			Console.WriteLine(selectedWords.ElementAt(i));
-		}
-#endif
 #endif
 		// basic removal of possibilities based on response
 		selectedWords = selectedWords.Where(x => passesThru(guessed, x, response)).ToList();
@@ -313,7 +303,7 @@ class bot
 			int cntChars = words.ToCharArray().Where(x => x == allChars[allC]).Count();
 			charCounts.Add(new Tuple<int, char>(cntChars, allChars[allC]));
 		}
-		return String.Join("", charCounts.OrderByDescending(x => x.Item1).Select(x=>x.Item2).ToList());
+		return String.Join("", charCounts.OrderByDescending(x => x.Item1).Select(x=>x.Item2));
 	}
 	/// <summary>
 	/// returns set of words sorted by entropy
@@ -323,12 +313,12 @@ class bot
 	/// <returns></returns>
 	private List<string> getBestByEntropy(List<string> setFrom, List<string> setOver)
 	{
-		LinkedList<Tuple<int, double>> listBest = new();
+		List<Tuple<int, double>> listBest = new();
 		for (int i = 0; i < setFrom.Count; i++) 
 		{
 			string word = setFrom.ElementAt(i);
 			double entropy = getEntropy(word, setOver);
-			listBest.AddLast(new Tuple<int, double>(i, entropy));
+			listBest.Add(new Tuple<int, double>(i, entropy));
 		}
 		// select best ones 
 		List<string> bestSet = listBest.OrderByDescending(x => x.Item2).Select(x => setFrom.ElementAt(x.Item1)).ToList();
@@ -370,7 +360,6 @@ class bot
 		{
 			httpResponse = reader.ReadToEnd();
 		}
-
 		JObject joResponse = JObject.Parse(httpResponse);
 		return (string)joResponse["result"];
 	}
